@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>KTX Mini – Quản lý cho sinh viên</title>
+
+  <!-- Supabase JS v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --panel2: #ffffffcc;
+      --text: #0f172a;
+      --muted:#64748b;
+      --line:#e8ebf2;
+      --shadow: 0 10px 30px rgba(15,23,42,.08);
+      --shadow2: 0 6px 18px rgba(15,23,42,.08);
+      --brand:#4f46e5;
+      --brand2:#22c55e;
+      --pink:#ec4899;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --ok:#22c55e;
+      --chip:#f1f5f9;
+      --chipText:#0f172a;
+      --radius: 18px;
+    }
+    [data-theme="dark"]{
+      --bg: #0b1220;
+      --panel: #0f172a;
+      --panel2: rgba(15,23,42,.72);
+      --text: #eaf0ff;
+      --muted:#a9b6d2;
+      --line: rgba(255,255,255,.08);
+      --shadow: 0 12px 40px rgba(0,0,0,.35);
+      --shadow2: 0 8px 24px rgba(0,0,0,.25);
+      --chip: rgba(255,255,255,.06);
+      --chipText: #eaf0ff;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:
+        radial-gradient(900px 450px at 15% 0%, rgba(79,70,229,.16), transparent 55%),
+        radial-gradient(900px 450px at 85% 15%, rgba(34,197,94,.14), transparent 60%),
+        linear-gradient(180deg, var(--bg), var(--bg));
+      color:var(--text);
+      min-height:100vh;
+    }
+
+    header{
+      position:sticky; top:0; z-index:50;
+      background: var(--panel2);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--line);
+    }
+    .header-inner{
+      max-width:1100px;
+      margin:0 auto;
+      padding:14px 16px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .brand{
+      display:flex; gap:10px; align-items:center;
+    }
+    .logo{
+      width:42px; height:42px;
+      border-radius:14px;
+      background: linear-gradient(135deg, rgba(79,70,229,.95), rgba(34,197,94,.85));
+      box-shadow: var(--shadow2);
+      display:grid; place-items:center;
+      color:white; font-weight:900;
+    }
+    .brand h1{margin:0; font-size:16px; line-height:1.1}
+    .brand small{display:block; color:var(--muted); font-size:12px; margin-top:2px}
+
+    .top-actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    .chip{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: var(--chip);
+      color:var(--chipText);
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .chip b{font-weight:800}
+    .btn{
+      border:1px solid var(--line);
+      background: var(--panel);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:14px;
+      cursor:pointer;
+      font-weight:700;
+      box-shadow: none;
+      transition:.15s;
+      white-space:nowrap;
+    }
+    .btn:hover{transform: translateY(-1px); box-shadow: var(--shadow2)}
+    .btn.primary{
+      border:none;
+      background: linear-gradient(135deg, var(--brand), rgba(79,70,229,.7));
+      color:white;
+    }
+    .btn.ghost{background: transparent}
+    .btn.danger{
+      border-color: rgba(239,68,68,.35);
+      background: rgba(239,68,68,.08);
+      color: var(--danger);
+    }
+    .btn.small{padding:7px 10px; border-radius:12px; font-size:12px; font-weight:800}
+
+    .container{
+      max-width:1100px;
+      margin:18px auto;
+      padding:0 16px 90px;
+    }
+
+    /* Tabs */
+    .tabs{
+      display:flex; gap:8px; flex-wrap:wrap;
+      margin:14px 0 16px;
+    }
+    .tab{
+      border:1px solid var(--line);
+      background: var(--panel);
+      color:var(--muted);
+      padding:10px 12px;
+      border-radius:14px;
+      cursor:pointer;
+      user-select:none;
+      font-weight:800;
+      transition:.15s;
+    }
+    .tab:hover{transform: translateY(-1px)}
+    .tab.active{
+      color:white;
+      border:none;
+      background: linear-gradient(135deg, var(--brand), var(--brand2));
+    }
+
+    .section{display:none}
+    .section.active{display:block}
+
+    /* Cards */
+    .grid{display:grid; grid-template-columns:1fr; gap:14px;}
+    @media (min-width: 980px){
+      .grid.two{grid-template-columns:1fr 1fr;}
+      .grid.three{grid-template-columns:1fr 1fr 1fr;}
+    }
+    .card{
+      background: var(--panel);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      padding:16px;
+      box-shadow: var(--shadow);
+    }
+    .card h2{
+      margin:0 0 10px;
+      font-size:14px;
+      letter-spacing:.2px;
+    }
+    .muted{color:var(--muted); font-size:12px}
+
+    /* Forms */
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:end;
+    }
+    label{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:700;
+    }
+    input, select, textarea{
+      width:280px; max-width:100%;
+      padding:10px 11px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background: transparent;
+      color:var(--text);
+      outline:none;
+      font-weight:600;
+    }
+    textarea{width:520px; min-height:92px; resize:vertical}
+    input::placeholder, textarea::placeholder{color: rgba(100,116,139,.7)}
+
+    /* Tables */
+    .table-wrap{overflow:auto; border-radius: 16px; border:1px solid var(--line)}
+    table{width:100%; border-collapse:separate; border-spacing:0; min-width: 760px;}
+    thead th{
+      text-align:left;
+      font-size:12px;
+      color:var(--muted);
+      background: rgba(79,70,229,.06);
+      padding:10px 12px;
+      border-bottom:1px solid var(--line);
+      position: sticky;
+      top: 0;
+    }
+    tbody td{
+      padding:10px 12px;
+      border-bottom:1px solid var(--line);
+      font-size:13px;
+      vertical-align:top;
+    }
+    tbody tr:hover td{background: rgba(34,197,94,.06)}
+    tbody tr:last-child td{border-bottom:none}
+
+    .badge{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: var(--chip);
+      font-size:12px;
+      font-weight:800;
+    }
+    .badge.ok{border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.10); color: var(--ok)}
+    .badge.warn{border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.12); color: var(--warn)}
+    .badge.pink{border-color: rgba(236,72,153,.35); background: rgba(236,72,153,.10); color: var(--pink)}
+
+    /* Toast */
+    .toast{
+      position:fixed; right:16px; bottom:16px; z-index:999;
+      min-width:260px; max-width:360px;
+      padding:12px 12px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      display:none;
+    }
+    .toast.show{display:block}
+    .toast .t{font-weight:900; margin-bottom:4px}
+    .toast .m{color:var(--muted); font-size:13px}
+    .toast.good{border-color: rgba(34,197,94,.35)}
+    .toast.bad{border-color: rgba(239,68,68,.35)}
+    .toast.warn{border-color: rgba(245,158,11,.35)}
+
+    /* Mobile bottom bar */
+    @media (max-width: 820px){
+      .tabs{
+        position: fixed;
+        left: 10px; right: 10px; bottom: 10px;
+        margin:0;
+        padding:10px;
+        background: var(--panel2);
+        border:1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(10px);
+        justify-content: space-between;
+      }
+      .tab{flex:1; text-align:center; padding:10px 8px; font-size:12px}
+      .container{padding-bottom: 140px;}
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="logo">KTX</div>
+      <div>
+        <h1>KTX Mini – Quản lý cho sinh viên</h1>
+        <small>Phòng • Sinh viên • Hóa đơn • Trực nhật • Bảng tin</small>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <div class="chip">🔌 Kết nối: <b id="connText">...</b></div>
+      <button class="btn ghost" onclick="toggleTheme()">🌓</button>
+      <button class="btn primary" onclick="reloadAll()">🔄 Tải lại</button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="tabs">
+    <div class="tab active" data-tab="dashboard">🏠 Tổng quan</div>
+    <div class="tab" data-tab="rooms">🏘️ Phòng & SV</div>
+    <div class="tab" data-tab="bills">🧾 Hóa đơn</div>
+    <div class="tab" data-tab="duty">🧹 Trực nhật</div>
+    <div class="tab" data-tab="board">📣 Bảng tin</div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="section active" id="dashboard">
+    <div class="grid two">
+      <div class="card">
+        <h2>📊 Tổng quan nhanh</h2>
+        <div class="muted">Nhìn biết KTX đang có bao nhiêu phòng/sinh viên.</div>
+        <div style="height:10px"></div>
+        <div class="row">
+          <div class="chip">🏠 Phòng: <b id="kRooms">0</b></div>
+          <div class="chip">🎓 Sinh viên: <b id="kStudents">0</b></div>
+          <div class="chip">🧾 Hóa đơn: <b id="kBills">0</b></div>
+          <div class="chip">🧹 Lịch trực: <b id="kDuty">0</b></div>
+          <div class="chip">📣 Bảng tin: <b id="kNotices">0</b></div>
+        </div>
+        <div style="height:10px"></div>
+        <div class="badge warn" id="todayDutyBadge" style="display:none">🔔 Hôm nay có lịch trực nhật</div>
+      </div>
+
+          </div>
+  </div>
+
+  <!-- ROOMS -->
+  <div class="section" id="rooms">
+    <div class="grid two">
+      <div class="card">
+        <h2>🏘️ Tạo phòng mới</h2>
+        <div class="row">
+          <label>Tên phòng
+            <input id="roomName" placeholder="VD: P101"/>
+          </label>
+          <label>Số người tối đa
+            <input id="maxPeople" type="number" placeholder="VD: 6"/>
+          </label>
+          <button class="btn primary" onclick="addRoom()">➕ Thêm phòng</button>
+        </div>
+              </div>
+
+      <div class="card">
+        <h2>🎓 Thêm sinh viên</h2>
+        <div class="row">
+          <label>Họ tên
+            <input id="studentName" placeholder="VD: Nguyễn Văn A"/>
+          </label>
+          <label>Chọn phòng
+            <select id="roomSelect"></select>
+          </label>
+          <button class="btn primary" onclick="addStudent()">➕ Thêm sinh viên</button>
+        </div>
+        <div class="muted">Có nút xóa SV để “quản lý thật”, không chỉ nhập.</div>
+      </div>
+    </div>
+
+    <div class="grid two">
+      <div class="card">
+        <h2>📋 Danh sách phòng</h2>
+        <div class="muted">Xóa phòng sẽ bị chặn nếu còn sinh viên/hóa đơn/lịch trực liên quan.</div>
+        <div style="height:12px"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Phòng</th>
+                <th>Tối đa</th>
+                <th>Số SV</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="roomList"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>👥 Danh sách sinh viên</h2>
+        <div style="height:12px"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Họ tên</th>
+                <th>Phòng</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="studentList"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BILLS -->
+  <div class="section" id="bills">
+    <div class="card">
+      <h2>🧾 Nhập hóa đơn (điện – nước)</h2>
+      <div class="row">
+        <label>Chọn phòng
+          <select id="billRoom"></select>
+        </label>
+        <label>Tiền điện (VND)
+          <input id="electricity" type="number" placeholder="VD: 350000"/>
+        </label>
+        <label>Tiền nước (VND)
+          <input id="water" type="number" placeholder="VD: 120000"/>
+        </label>
+        <label>Tháng
+          <input id="month" placeholder="VD: 01/2026"/>
+        </label>
+        <button class="btn primary" onclick="addBill()">➕ Lưu hóa đơn</button>
+      </div>
+      <div class="muted">Hệ thống tự tính <b>Tổng</b> và <b>Tiền / SV</b> theo số sinh viên trong phòng.</div>
+    </div>
+
+    <div class="grid two">
+      <div class="card">
+        <h2>📋 Danh sách hóa đơn</h2>
+        <div style="height:12px"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Phòng</th>
+                <th>Tháng</th>
+                <th>Điện</th>
+                <th>Nước</th>
+                <th>Tổng</th>
+                <th>Số SV</th>
+                <th>Tiền/SV</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="billList"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🧮 Chi tiết chia tiền theo từng sinh viên</h2>
+        <div class="row">
+          <label>Chọn hóa đơn (Phòng – Tháng)
+            <select id="billSelect"></select>
+          </label>
+          <button class="btn" onclick="viewBillDetail()">👀 Xem chi tiết</button>
+        </div>
+        <div style="height:12px"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Sinh viên</th>
+                <th>Phải đóng (VND)</th>
+              </tr>
+            </thead>
+            <tbody id="billDetailList"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DUTY -->
+  <div class="section" id="duty">
+    <div class="card">
+      <h2>🧹 Lịch trực nhật (xoay vòng)</h2>
+      <div class="row">
+        <label>Chọn phòng
+          <select id="dutyRoom"></select>
+        </label>
+        <label>Ngày bắt đầu
+          <input id="startDate" type="date"/>
+        </label>
+        <button class="btn primary" onclick="generateDuty()">⚙️ Tạo lịch</button>
+        <button class="btn danger" onclick="clearDutyForRoom()">🧽 Xóa lịch phòng</button>
+      </div>
+      <div class="muted">Cơ chế: sinh viên trong phòng được phân công lần lượt theo từng ngày.</div>
+    </div>
+
+    <div class="card">
+      <h2>📅 Danh sách lịch trực</h2>
+      <div style="height:12px"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Phòng</th>
+              <th>Sinh viên</th>
+              <th>Ngày trực</th>
+              <th>Trạng thái</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="dutyList"></tbody>
+        </table>
+      </div>
+      <div style="height:10px"></div>
+      <span class="badge warn" id="dutyTodayInfo" style="display:none">🔔 Có người trực hôm nay</span>
+    </div>
+  </div>
+
+  <!-- BOARD -->
+  <div class="section" id="board">
+    <div class="card">
+      <h2>📣 Bảng tin nội bộ (mượn đồ – mất đồ – thông báo)</h2>
+      <div class="row">
+        <label>Loại
+          <select id="noticeCategory">
+            <option value="Mượn đồ">Mượn đồ</option>
+            <option value="Mất đồ">Mất đồ</option>
+            <option value="Thông báo">Thông báo</option>
+            <option value="Nhắc trực nhật">Nhắc trực nhật</option>
+          </select>
+        </label>
+        <label>Tiêu đề
+          <input id="noticeTitle" placeholder="VD: Mượn sạc / Mất ví ở tầng 2..."/>
+        </label>
+      </div>
+      <label>Nội dung
+        <textarea id="noticeContent" placeholder="Mô tả chi tiết, liên hệ, thời gian..."></textarea>
+      </label>
+      <div class="row">
+        <button class="btn primary" onclick="addNotice()">📝 Đăng bài</button>
+        <button class="btn" onclick="loadNotices()">🔄 Tải lại</button>
+      </div>
+         </div>
+
+    <div class="card">
+      <h2>🗂️ Danh sách bài đăng</h2>
+      <div style="height:12px"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Loại</th>
+              <th>Tiêu đề</th>
+              <th>Nội dung</th>
+              <th>Thời gian</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="noticeList"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <div class="t" id="toastTitle">Thông báo</div>
+  <div class="m" id="toastMsg"></div>
+</div>
+
+<script>
+/* =========================
+   SUPABASE CONFIG
+   ========================= */
+const SUPABASE_URL = "https://vfrbwfevuzzpqmhwigxp.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_cnsqv6qNt3qClako5aM1ig_Mliz2gFy";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const $ = (id) => document.getElementById(id);
+
+function formatVND(n){
+  const x = Number(n || 0);
+  return x.toLocaleString("vi-VN");
+}
+
+function toast(type, title, msg){
+  const t = $("toast");
+  t.className = "toast show " + (type || "");
+  $("toastTitle").textContent = title || "Thông báo";
+  $("toastMsg").textContent = msg || "";
+  setTimeout(()=> t.className = "toast", 2600);
+}
+
+function setConn(ok){
+  $("connText").textContent = ok ? "OK" : "Lỗi";
+  $("connText").style.color = ok ? "#22c55e" : "#ef4444";
+}
+
+/* Theme */
+function applyTheme(theme){
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem("ktx_theme", theme);
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute("data-theme") || "light";
+  applyTheme(cur === "dark" ? "light" : "dark");
+}
+(function initTheme(){
+  const saved = localStorage.getItem("ktx_theme") || "light";
+  applyTheme(saved);
+})();
+
+/* Tabs */
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    tab.classList.add("active");
+    const name = tab.dataset.tab;
+    document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+    $(name).classList.add("active");
+  });
+});
+
+/* Cache */
+let cacheRooms = [];
+let cacheStudents = [];
+let cacheBills = [];
+let cacheDuty = [];
+let cacheNotices = [];
+
+/* Connection */
+async function checkConnection(){
+  try{
+    const { error } = await supabaseClient.from("rooms").select("id").limit(1);
+    if(error) throw error;
+    setConn(true);
+  }catch(e){
+    setConn(false);
+    toast("bad","Không kết nối được Supabase", e.message || "Kiểm tra URL/KEY");
+  }
+}
+
+/* Dashboard */
+function updateDashboard(){
+  $("kRooms").textContent = cacheRooms.length;
+  $("kStudents").textContent = cacheStudents.length;
+  $("kBills").textContent = cacheBills.length;
+  $("kDuty").textContent = cacheDuty.length;
+  $("kNotices").textContent = cacheNotices.length;
+
+  const today = new Date().toISOString().slice(0,10);
+  const hasToday = cacheDuty.some(d => d.duty_date === today);
+  $("todayDutyBadge").style.display = hasToday ? "inline-flex" : "none";
+}
+
+/* Reload */
+async function reloadAll(){
+  await Promise.all([
+    loadRooms(),
+    loadStudents(),
+    loadBills(),
+    loadDuty(),
+    loadNotices()
+  ]);
+  updateDashboard();
+  toast("good","Đã tải lại","Dữ liệu đã cập nhật.");
+}
+
+/* ROOMS */
+function fillRoomSelects(){
+  ["roomSelect","billRoom","dutyRoom"].forEach(id=>{
+    const sel = $(id);
+    if(!sel) return;
+    sel.innerHTML = "";
+    cacheRooms.forEach(r=>{
+      sel.innerHTML += `<option value="${r.id}">${r.room_name}</option>`;
+    });
+  });
+}
+
+async function loadRooms(){
+  const { data, error } = await supabaseClient.from("rooms").select("*").order("room_name");
+  if(error){ toast("bad","Lỗi load phòng", error.message); return; }
+  cacheRooms = data || [];
+
+  fillRoomSelects();
+
+  // count students per room
+  const countMap = {};
+  cacheStudents.forEach(s => countMap[s.room_id] = (countMap[s.room_id]||0) + 1);
+
+  const tbody = $("roomList");
+  tbody.innerHTML = "";
+  cacheRooms.forEach(r=>{
+    const cnt = countMap[r.id] || 0;
+    tbody.innerHTML += `
+      <tr>
+        <td><b>${r.room_name}</b></td>
+        <td>${r.max_people ?? ""}</td>
+        <td>${cnt}</td>
+        <td>
+          <button class="btn small danger" onclick="deleteRoom('${r.id}', '${r.room_name.replace(/'/g,"\\'")}')">🗑️ Xóa</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+async function addRoom(){
+  const name = $("roomName").value.trim();
+  const max = Number($("maxPeople").value || 0);
+  if(!name){ toast("warn","Thiếu tên phòng","Nhập tên phòng giúp mình nha."); return; }
+
+  const { error } = await supabaseClient.from("rooms").insert([{ room_name:name, max_people:max }]);
+  if(error){ toast("bad","Không thêm được phòng", error.message); return; }
+
+  $("roomName").value = ""; $("maxPeople").value = "";
+  await loadRooms();
+  await loadStudents();
+  updateDashboard();
+  toast("good","Đã thêm phòng", `Phòng ${name} đã tạo.`);
+}
+
+async function deleteRoom(roomId, roomName){
+  // block if related data exists
+  const { count: cStudents } = await supabaseClient.from("students")
+    .select("*",{count:"exact", head:true}).eq("room_id", roomId);
+  const { count: cBills } = await supabaseClient.from("bills")
+    .select("*",{count:"exact", head:true}).eq("room_id", roomId);
+  const { count: cDuty } = await supabaseClient.from("schedules")
+    .select("*",{count:"exact", head:true}).eq("room_id", roomId);
+
+  if((cStudents||0) > 0 || (cBills||0) > 0 || (cDuty||0) > 0){
+    toast("warn","Chưa thể xóa phòng",
+      `Phòng ${roomName} còn: SV(${cStudents||0}), hóa đơn(${cBills||0}), lịch trực(${cDuty||0}). Xóa liên quan trước nhé.`);
+    return;
+  }
+
+  if(!confirm(`Xóa phòng ${roomName}?`)) return;
+  const { error } = await supabaseClient.from("rooms").delete().eq("id", roomId);
+  if(error){ toast("bad","Xóa phòng thất bại", error.message); return; }
+
+  await loadRooms();
+  updateDashboard();
+  toast("good","Đã xóa phòng", `Phòng ${roomName} đã xóa.`);
+}
+
+/* STUDENTS */
+async function loadStudents(){
+  const { data, error } = await supabaseClient
+    .from("students")
+    .select("id, full_name, room_id, rooms(room_name)")
+    .order("full_name");
+
+  if(error){ toast("bad","Lỗi load sinh viên", error.message); return; }
+  cacheStudents = data || [];
+
+  const tbody = $("studentList");
+  tbody.innerHTML = "";
+  cacheStudents.forEach(s=>{
+    tbody.innerHTML += `
+      <tr>
+        <td>${s.full_name}</td>
+        <td>${s.rooms?.room_name || ""}</td>
+        <td>
+          <button class="btn small danger" onclick="deleteStudent('${s.id}', '${(s.full_name||"").replace(/'/g,"\\'")}')">🗑️ Xóa</button>
+        </td>
+      </tr>
+    `;
+  });
+
+  // refresh rooms table counts if rooms loaded
+  if(cacheRooms.length) await loadRooms();
+}
+
+async function addStudent(){
+  const name = $("studentName").value.trim();
+  const roomId = $("roomSelect").value;
+  if(!name){ toast("warn","Thiếu họ tên","Nhập họ tên sinh viên nhé."); return; }
+  if(!roomId){ toast("warn","Chưa có phòng","Tạo phòng trước nha."); return; }
+
+  const { error } = await supabaseClient.from("students").insert([{ full_name:name, room_id:roomId }]);
+  if(error){ toast("bad","Không thêm được sinh viên", error.message); return; }
+
+  $("studentName").value = "";
+  await loadStudents();
+  await loadBills(); // update per-person
+  updateDashboard();
+  toast("good","Đã thêm sinh viên", `${name} đã thêm.`);
+}
+
+async function deleteStudent(studentId, name){
+  if(!confirm(`Xóa sinh viên "${name}"?`)) return;
+  const { error } = await supabaseClient.from("students").delete().eq("id", studentId);
+  if(error){ toast("bad","Xóa sinh viên thất bại", error.message); return; }
+
+  await loadStudents();
+  await loadBills();
+  updateDashboard();
+  toast("good","Đã xóa sinh viên", `${name} đã xóa.`);
+}
+
+/* BILLS + SPLIT */
+async function loadBills(){
+  const { data, error } = await supabaseClient
+    .from("bills")
+    .select("id, room_id, electricity, water, month, rooms(room_name)")
+    .order("month", { ascending:false });
+
+  if(error){ toast("bad","Lỗi load hóa đơn", error.message); return; }
+  cacheBills = data || [];
+
+  const countMap = {};
+  cacheStudents.forEach(s => countMap[s.room_id] = (countMap[s.room_id]||0) + 1);
+
+  const tbody = $("billList");
+  tbody.innerHTML = "";
+
+  cacheBills.forEach(b=>{
+    const cnt = countMap[b.room_id] || 0;
+    const e = Number(b.electricity||0);
+    const w = Number(b.water||0);
+    const total = e+w;
+    const per = cnt>0 ? Math.round(total/cnt) : 0;
+
+    tbody.innerHTML += `
+      <tr>
+        <td><b>${b.rooms?.room_name||""}</b></td>
+        <td>${b.month||""}</td>
+        <td>${formatVND(e)}</td>
+        <td>${formatVND(w)}</td>
+        <td><b>${formatVND(total)}</b></td>
+        <td>${cnt}</td>
+        <td><b>${formatVND(per)}</b></td>
+        <td><button class="btn small danger" onclick="deleteBill('${b.id}')">🗑️</button></td>
+      </tr>
+    `;
+  });
+
+  const sel = $("billSelect");
+  sel.innerHTML = "";
+  cacheBills.forEach(b=>{
+    sel.innerHTML += `<option value="${b.id}">${b.rooms?.room_name||""} - ${b.month||""}</option>`;
+  });
+
+  if(!cacheBills.length) $("billDetailList").innerHTML = "";
+}
+
+async function addBill(){
+  const roomId = $("billRoom").value;
+  const e = Number($("electricity").value || 0);
+  const w = Number($("water").value || 0);
+  const m = $("month").value.trim();
+
+  if(!roomId){ toast("warn","Chưa có phòng","Tạo phòng trước nhé."); return; }
+  if(!m){ toast("warn","Thiếu tháng","VD: 01/2026"); return; }
+
+  const { error } = await supabaseClient.from("bills").insert([{ room_id:roomId, electricity:e, water:w, month:m }]);
+  if(error){ toast("bad","Không thêm được hóa đơn", error.message); return; }
+
+  $("electricity").value=""; $("water").value=""; $("month").value="";
+  await loadBills();
+  updateDashboard();
+  toast("good","Đã lưu hóa đơn","OK!");
+}
+
+async function deleteBill(id){
+  if(!confirm("Xóa hóa đơn này?")) return;
+  const { error } = await supabaseClient.from("bills").delete().eq("id", id);
+  if(error){ toast("bad","Xóa hóa đơn thất bại", error.message); return; }
+  await loadBills();
+  updateDashboard();
+  toast("good","Đã xóa hóa đơn","Đã xóa.");
+}
+
+async function viewBillDetail(){
+  const billId = $("billSelect").value;
+  if(!billId){ toast("warn","Chưa có hóa đơn","Hãy thêm hóa đơn trước."); return; }
+
+  const { data: bill, error } = await supabaseClient
+    .from("bills")
+    .select("room_id, electricity, water, month, rooms(room_name)")
+    .eq("id", billId).single();
+
+  if(error){ toast("bad","Lỗi lấy hóa đơn", error.message); return; }
+
+  const { data: students, error: e2 } = await supabaseClient
+    .from("students")
+    .select("full_name")
+    .eq("room_id", bill.room_id)
+    .order("full_name");
+
+  if(e2){ toast("bad","Lỗi lấy sinh viên", e2.message); return; }
+
+  const total = Number(bill.electricity||0) + Number(bill.water||0);
+  const per = students.length ? Math.round(total / students.length) : 0;
+
+  const tbody = $("billDetailList");
+  tbody.innerHTML = "";
+  students.forEach(s=>{
+    tbody.innerHTML += `
+      <tr>
+        <td>${s.full_name}</td>
+        <td><b>${formatVND(per)}</b></td>
+      </tr>
+    `;
+  });
+
+  toast("good","Chi tiết chia tiền",
+    `Phòng ${bill.rooms?.room_name||""} (${bill.month||""}) → mỗi SV: ${formatVND(per)} VND`);
+}
+
+/* DUTY (schedules: room_id, student_name, duty_date, notified) */
+async function loadDuty(){
+  const { data, error } = await supabaseClient
+    .from("schedules")
+    .select("id, student_name, duty_date, room_id, notified, rooms(room_name)")
+    .order("duty_date");
+
+  if(error){ toast("bad","Lỗi load lịch trực", error.message); return; }
+  cacheDuty = data || [];
+
+  const today = new Date().toISOString().slice(0,10);
+  const hasToday = cacheDuty.some(d => d.duty_date === today);
+  $("dutyTodayInfo").style.display = hasToday ? "inline-flex" : "none";
+
+  const tbody = $("dutyList");
+  tbody.innerHTML = "";
+  cacheDuty.forEach(d=>{
+    const isToday = d.duty_date === today;
+    const st = isToday
+      ? `<span class="badge warn">🔔 Hôm nay</span>`
+      : (d.notified ? `<span class="badge ok">✅ Đã nhắc</span>` : `<span class="badge">⏳ Chưa nhắc</span>`);
+
+    tbody.innerHTML += `
+      <tr>
+        <td><b>${d.rooms?.room_name || ""}</b></td>
+        <td>${d.student_name || ""}</td>
+        <td>${d.duty_date || ""}</td>
+        <td>${st}</td>
+        <td>
+          <button class="btn small danger" onclick="deleteDuty('${d.id}')">🗑️</button>
+          ${isToday && !d.notified ? `<button class="btn small primary" onclick="notifyDuty('${d.id}')">🔔 Nhắc</button>` : ""}
+        </td>
+      </tr>
+    `;
+  });
+}
+
+async function generateDuty(){
+  const roomId = $("dutyRoom").value;
+  const start = $("startDate").value;
+  if(!roomId){ toast("warn","Chưa có phòng","Tạo phòng trước nhé."); return; }
+  if(!start){ toast("warn","Thiếu ngày bắt đầu","Chọn ngày bắt đầu trực."); return; }
+
+  const { data: students, error } = await supabaseClient
+    .from("students")
+    .select("full_name")
+    .eq("room_id", roomId)
+    .order("full_name");
+
+  if(error){ toast("bad","Không lấy được SV", error.message); return; }
+  if(!students.length){ toast("warn","Phòng chưa có SV","Thêm SV rồi tạo lịch nha."); return; }
+
+  const startDate = new Date(start);
+  const rows = students.map((s, i)=>{
+    const d = new Date(startDate);
+    d.setDate(startDate.getDate() + i);
+    return { room_id: roomId, student_name: s.full_name, duty_date: d.toISOString().slice(0,10), notified:false };
+  });
+
+  const { error: e2 } = await supabaseClient.from("schedules").insert(rows);
+  if(e2){ toast("bad","Tạo lịch thất bại", e2.message); return; }
+
+  await loadDuty();
+  updateDashboard();
+  toast("good","Đã tạo lịch trực","OK!");
+}
+
+async function clearDutyForRoom(){
+  const roomId = $("dutyRoom").value;
+  if(!roomId){ toast("warn","Chưa có phòng","Tạo phòng trước nhé."); return; }
+  if(!confirm("Xóa toàn bộ lịch trực của phòng này?")) return;
+
+  const { error } = await supabaseClient.from("schedules").delete().eq("room_id", roomId);
+  if(error){ toast("bad","Xóa lịch thất bại", error.message); return; }
+
+  await loadDuty();
+  updateDashboard();
+  toast("good","Đã xóa lịch","OK!");
+}
+
+async function deleteDuty(id){
+  if(!confirm("Xóa lịch trực này?")) return;
+  const { error } = await supabaseClient.from("schedules").delete().eq("id", id);
+  if(error){ toast("bad","Xóa thất bại", error.message); return; }
+  await loadDuty();
+  updateDashboard();
+  toast("good","Đã xóa","OK!");
+}
+
+async function notifyDuty(dutyId){
+  const { data: d, error } = await supabaseClient
+    .from("schedules")
+    .select("id, student_name, duty_date, rooms(room_name)")
+    .eq("id", dutyId).single();
+
+  if(error){ toast("bad","Không nhắc được", error.message); return; }
+
+  const title = `Nhắc trực nhật: ${d.student_name}`;
+  const content = `Hôm nay (${d.duty_date}) đến lượt ${d.student_name} trực phòng ${d.rooms?.room_name || ""}.`;
+
+  const { error: e2 } = await supabaseClient.from("notices").insert([{
+    category: "Nhắc trực nhật",
+    title, content
+  }]);
+  if(e2){ toast("bad","Không tạo được thông báo", e2.message); return; }
+
+  const { error: e3 } = await supabaseClient.from("schedules").update({ notified:true }).eq("id", dutyId);
+  if(e3){ toast("warn","Đã tạo thông báo nhưng chưa đánh dấu", e3.message); }
+
+  await loadDuty();
+  await loadNotices();
+  updateDashboard();
+  toast("good","Đã nhắc trực","Thông báo đã lên bảng tin.");
+}
+
+/* NOTICES (notices: category, title, content, created_at) */
+async function loadNotices(){
+  const { data, error } = await supabaseClient
+    .from("notices")
+    .select("id, category, title, content, created_at")
+    .order("created_at", { ascending:false });
+
+  if(error){ toast("bad","Lỗi load bảng tin", error.message); return; }
+  cacheNotices = data || [];
+
+  const tbody = $("noticeList");
+  tbody.innerHTML = "";
+  cacheNotices.forEach(n=>{
+    const time = n.created_at ? new Date(n.created_at).toLocaleString("vi-VN") : "";
+    const cat = n.category || "Thông báo";
+    const badgeCls = cat.includes("Mất") ? "warn" : (cat.includes("Mượn") ? "pink" : "ok");
+
+    tbody.innerHTML += `
+      <tr>
+        <td><span class="badge ${badgeCls}">${cat}</span></td>
+        <td><b>${n.title || ""}</b></td>
+        <td style="max-width:420px">${n.content || ""}</td>
+        <td>${time}</td>
+        <td><button class="btn small danger" onclick="deleteNotice('${n.id}')">🗑️</button></td>
+      </tr>
+    `;
+  });
+}
+
+async function addNotice(){
+  const category = $("noticeCategory").value;
+  const title = $("noticeTitle").value.trim();
+  const content = $("noticeContent").value.trim();
+
+  if(!title || !content){
+    toast("warn","Thiếu thông tin","Nhập tiêu đề + nội dung nhé.");
+    return;
+  }
+
+  const { error } = await supabaseClient.from("notices").insert([{ category, title, content }]);
+  if(error){ toast("bad","Không đăng được", error.message); return; }
+
+  $("noticeTitle").value=""; $("noticeContent").value="";
+  await loadNotices();
+  updateDashboard();
+  toast("good","Đã đăng bài","OK!");
+}
+
+async function deleteNotice(id){
+  if(!confirm("Xóa bài đăng này?")) return;
+  const { error } = await supabaseClient.from("notices").delete().eq("id", id);
+  if(error){ toast("bad","Xóa bài thất bại", error.message); return; }
+  await loadNotices();
+  updateDashboard();
+  toast("good","Đã xóa bài","OK!");
+}
+
+/* INIT */
+(async function init(){
+  await checkConnection();
+
+  // load order matters (students needed for bill split counts)
+  await loadRooms();
+  await loadStudents();
+  await loadBills();
+  await loadDuty();
+  await loadNotices();
+
+  // set default start date
+  const today = new Date().toISOString().slice(0,10);
+  $("startDate").value = today;
+
+  updateDashboard();
+})();
+</script>
+
+</body>
+</html>
